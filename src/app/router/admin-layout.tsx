@@ -11,10 +11,9 @@ import { useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/features/auth/hooks/use-auth'
 import { GlobalSearch } from '@/features/global-search/components/global-search'
-import { canUsePermission, useDoctypePermissions } from '@/features/permissions/hooks/use-doctype-permissions'
-import { navItems, navSections } from './navigation'
-
+import { navSections } from './navigation'
 import { resolveTopbarCopy } from './topbar-copy'
+import { useAdminNavigationPermissions } from './use-admin-navigation-permissions'
 
 export function AdminLayout() {
   const [isCollapsed, setIsCollapsed] = useState(false)
@@ -24,24 +23,12 @@ export function AdminLayout() {
   const location = useLocation()
   const navigate = useNavigate()
   const profileMenuRef = useRef<HTMLDivElement | null>(null)
-  const accountPermissions = useDoctypePermissions('User')
-  const customerPermissions = useDoctypePermissions('Customer')
-  const supplierPermissions = useDoctypePermissions('Supplier')
-  const itemPermissions = useDoctypePermissions('Item')
-  const salesOrderPermissions = useDoctypePermissions('Sales Order')
-  const paymentEntryPermissions = useDoctypePermissions('Payment Entry')
-  const salesInvoicePermissions = useDoctypePermissions('Sales Invoice')
-  const purchaseOrderPermissions = useDoctypePermissions('Purchase Order')
-  const purchaseInvoicePermissions = useDoctypePermissions('Purchase Invoice')
-  const posOpeningPermissions = useDoctypePermissions('POS Opening Entry')
-  const stockEntryPermissions = useDoctypePermissions('Stock Entry')
-  const stockReconciliationPermissions = useDoctypePermissions('Stock Reconciliation')
   const CollapseIcon = isCollapsed ? PanelLeftOpen : PanelLeftClose
   const topbarCopy = resolveTopbarCopy(location.pathname)
   const currentIdentity = auth.user?.name ?? auth.user?.email ?? 'unknown'
   const primaryRoles = auth.user?.roles?.slice(0, 4) ?? []
   const extraRolesCount = Math.max((auth.user?.roles?.length ?? 0) - primaryRoles.length, 0)
-  const canOpenPos = canUsePermission(salesInvoicePermissions.canCreate) && canUsePermission(salesInvoicePermissions.canSubmit)
+  const { canOpenPos, globalSearchPermissions, visibleNavItems } = useAdminNavigationPermissions()
 
   useEffect(() => {
     if (!isProfileMenuOpen) {
@@ -68,62 +55,6 @@ export function AdminLayout() {
       document.removeEventListener('keydown', handleEscape)
     }
   }, [isProfileMenuOpen])
-
-  const visibleNavItems = navItems.filter((item) => {
-    if (item.path === '/accounts') {
-      return canUsePermission(accountPermissions.canRead)
-    }
-
-    if (item.path === '/customers') {
-      return canUsePermission(customerPermissions.canRead)
-    }
-
-    if (item.path === '/suppliers') {
-      return canUsePermission(supplierPermissions.canRead)
-    }
-
-    if (item.path === '/items') {
-      return canUsePermission(itemPermissions.canRead)
-    }
-
-    if (item.path === '/sales-orders') {
-      return canUsePermission(salesOrderPermissions.canRead)
-    }
-
-    if (item.path === '/purchase-invoices') {
-      return canUsePermission(purchaseInvoicePermissions.canRead)
-    }
-
-    if (item.path === '/purchase-orders') {
-      return canUsePermission(purchaseOrderPermissions.canRead)
-    }
-
-    if (item.path === '/daily-cash' || item.path === '/statements' || item.path === '/collections' || item.path === '/disbursements') {
-      return canUsePermission(paymentEntryPermissions.canRead)
-    }
-
-    if (item.path === '/sales-invoices') {
-      return canUsePermission(salesInvoicePermissions.canRead)
-    }
-
-    if (item.path === '/pos') {
-      return canOpenPos
-    }
-
-    if (item.path === '/cash-shifts') {
-      return canUsePermission(posOpeningPermissions.canRead) || canOpenPos
-    }
-
-    if (item.path === '/stock') {
-      return canUsePermission(stockEntryPermissions.canRead)
-    }
-
-    if (item.path === '/stock-reconciliations') {
-      return canUsePermission(stockReconciliationPermissions.canRead)
-    }
-
-    return true
-  })
 
   async function handleLogout() {
     if (isLoggingOut) {
@@ -230,20 +161,7 @@ export function AdminLayout() {
 
           <GlobalSearch
             key={`${location.pathname}${location.search}`}
-            permissions={{
-              accounts: canUsePermission(accountPermissions.canRead),
-              customers: canUsePermission(customerPermissions.canRead),
-              suppliers: canUsePermission(supplierPermissions.canRead),
-              items: canUsePermission(itemPermissions.canRead),
-              salesOrders: canUsePermission(salesOrderPermissions.canRead),
-              purchaseInvoices: canUsePermission(purchaseInvoicePermissions.canRead),
-              purchaseOrders: canUsePermission(purchaseOrderPermissions.canRead),
-              collections: canUsePermission(paymentEntryPermissions.canRead),
-              disbursements: canUsePermission(paymentEntryPermissions.canRead),
-              stockEntries: canUsePermission(stockEntryPermissions.canRead),
-              stockReconciliations: canUsePermission(stockReconciliationPermissions.canRead),
-              salesInvoices: canUsePermission(salesInvoicePermissions.canRead),
-            }}
+            permissions={globalSearchPermissions}
           />
 
           <div className="topbar-actions">
