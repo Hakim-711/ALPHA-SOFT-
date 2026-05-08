@@ -2,6 +2,7 @@ import { Suspense, type ReactNode } from 'react'
 import { Navigate, createBrowserRouter } from 'react-router-dom'
 import { Loading } from '@/shared/ui/loading'
 import { AdminLayout } from './admin-layout'
+import { DoctypePermissionRoute } from './doctype-permission-route'
 import { ProtectedRoute } from './protected-route'
 import { RouteErrorBoundary } from './route-error-boundary'
 import {
@@ -91,11 +92,19 @@ export const router = createBrowserRouter([
     children: [
       {
         path: 'pos',
-        element: routePage(<PosPage />),
+        element: (
+          <DoctypePermissionRoute doctype="Sales Invoice" permissions={['canCreate', 'canSubmit']}>
+            {routePage(<PosPage />)}
+          </DoctypePermissionRoute>
+        ),
       },
       {
         path: 'pos/returns',
-        element: routePage(<PosReturnsPage />),
+        element: (
+          <DoctypePermissionRoute doctype="Sales Invoice" permissions={['canCreate', 'canSubmit']}>
+            {routePage(<PosReturnsPage />)}
+          </DoctypePermissionRoute>
+        ),
       },
       {
         element: <AdminLayout />,
@@ -111,6 +120,7 @@ export const router = createBrowserRouter([
           },
           {
             path: 'accounts',
+            element: <DoctypePermissionRoute doctype="User" />,
             children: [
               { index: true, element: routePage(<AccountsListPage />) },
               { path: 'new', element: routePage(<AccountCreatePage />) },
@@ -120,18 +130,31 @@ export const router = createBrowserRouter([
           },
           {
             path: 'daily-cash',
-            element: routePage(<DailyCashPage />),
+            element: (
+              <DoctypePermissionRoute doctype="Payment Entry">
+                {routePage(<DailyCashPage />)}
+              </DoctypePermissionRoute>
+            ),
           },
           {
             path: 'cash-shifts',
-            element: routePage(<CashShiftsPage />),
+            element: (
+              <DoctypePermissionRoute doctype="POS Opening Entry">
+                {routePage(<CashShiftsPage />)}
+              </DoctypePermissionRoute>
+            ),
           },
           {
             path: 'statements',
-            element: routePage(<StatementsPage />),
+            element: (
+              <DoctypePermissionRoute doctype="Payment Entry">
+                {routePage(<StatementsPage />)}
+              </DoctypePermissionRoute>
+            ),
           },
           {
             path: 'customers',
+            element: <DoctypePermissionRoute doctype="Customer" />,
             children: [
               { index: true, element: routePage(<CustomersListPage />) },
               { path: 'new', element: routePage(<CustomerCreatePage />) },
@@ -141,6 +164,7 @@ export const router = createBrowserRouter([
           },
           {
             path: 'suppliers',
+            element: <DoctypePermissionRoute doctype="Supplier" />,
             children: [
               { index: true, element: routePage(<SuppliersListPage />) },
               { path: 'new', element: routePage(<SupplierCreatePage />) },
@@ -150,6 +174,7 @@ export const router = createBrowserRouter([
           },
           {
             path: 'items',
+            element: <DoctypePermissionRoute doctype="Item" />,
             children: [
               { index: true, element: routePage(<ItemsListPage />) },
               { path: 'new', element: routePage(<ItemCreatePage />) },
@@ -159,6 +184,7 @@ export const router = createBrowserRouter([
           },
           {
             path: 'sales-orders',
+            element: <DoctypePermissionRoute doctype="Sales Order" />,
             children: [
               { index: true, element: routePage(<SalesOrdersListPage />) },
               { path: 'new', element: routePage(<SalesOrderCreatePage />) },
@@ -168,6 +194,7 @@ export const router = createBrowserRouter([
           },
           {
             path: 'collections',
+            element: <DoctypePermissionRoute doctype="Payment Entry" />,
             children: [
               { index: true, element: routePage(<CollectionsListPage />) },
               { path: 'new', element: routePage(<CollectionCreatePage />) },
@@ -177,6 +204,7 @@ export const router = createBrowserRouter([
           },
           {
             path: 'purchase-invoices',
+            element: <DoctypePermissionRoute doctype="Purchase Invoice" />,
             children: [
               { index: true, element: routePage(<PurchaseInvoicesListPage />) },
               { path: 'new', element: routePage(<PurchaseInvoiceCreatePage />) },
@@ -186,6 +214,7 @@ export const router = createBrowserRouter([
           },
           {
             path: 'purchase-orders',
+            element: <DoctypePermissionRoute doctype="Purchase Order" />,
             children: [
               { index: true, element: routePage(<PurchaseOrdersListPage />) },
               { path: 'new', element: routePage(<PurchaseOrderCreatePage />) },
@@ -195,6 +224,7 @@ export const router = createBrowserRouter([
           },
           {
             path: 'sales-invoices',
+            element: <DoctypePermissionRoute doctype="Sales Invoice" />,
             children: [
               { index: true, element: routePage(<SalesInvoicesListPage />) },
               { path: 'new', element: routePage(<SalesInvoiceCreatePage />) },
@@ -204,6 +234,7 @@ export const router = createBrowserRouter([
           },
           {
             path: 'disbursements',
+            element: <DoctypePermissionRoute doctype="Payment Entry" />,
             children: [
               { index: true, element: routePage(<DisbursementsListPage />) },
               { path: 'new', element: routePage(<DisbursementCreatePage />) },
@@ -213,6 +244,7 @@ export const router = createBrowserRouter([
           },
           {
             path: 'stock',
+            element: <DoctypePermissionRoute doctype="Stock Entry" />,
             children: [
               { index: true, element: routePage(<StockListPage />) },
               { path: 'new', element: routePage(<StockCreatePage />) },
@@ -222,6 +254,7 @@ export const router = createBrowserRouter([
           },
           {
             path: 'stock-reconciliations',
+            element: <DoctypePermissionRoute doctype="Stock Reconciliation" />,
             children: [
               { index: true, element: routePage(<StockReconciliationsListPage />) },
               { path: 'new', element: routePage(<StockReconciliationCreatePage />) },
