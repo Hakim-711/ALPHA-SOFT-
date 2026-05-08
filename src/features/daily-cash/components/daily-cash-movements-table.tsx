@@ -10,7 +10,7 @@ interface DailyCashMovementsTableProps {
 }
 
 function toneForMovement(row: DailyCashMovement) {
-  if (row.type === 'disbursement' || row.type === 'transfer-out') {
+  if (row.type === 'disbursement' || row.type === 'customer-refund' || row.type === 'transfer-out') {
     return 'red'
   }
 
@@ -22,7 +22,7 @@ function toneForMovement(row: DailyCashMovement) {
 }
 
 function iconForMovement(row: DailyCashMovement) {
-  if (row.type === 'disbursement' || row.type === 'transfer-out') {
+  if (row.type === 'disbursement' || row.type === 'customer-refund' || row.type === 'transfer-out') {
     return <ArrowUpRight size={14} aria-hidden="true" />
   }
 

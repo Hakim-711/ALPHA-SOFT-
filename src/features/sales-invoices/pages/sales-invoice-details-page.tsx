@@ -1,4 +1,4 @@
-import { ArrowLeft, Edit, FileCheck2, Power, ReceiptText, Truck, Wallet } from 'lucide-react'
+import { ArrowLeft, Edit, FileCheck2, Power, ReceiptText, RotateCcw, Truck, Wallet } from 'lucide-react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { Badge } from '@/shared/ui/badge'
 import { Breadcrumbs } from '@/shared/ui/breadcrumbs'
@@ -76,6 +76,12 @@ export default function SalesInvoiceDetailsPage() {
                 <Power size={17} aria-hidden="true" />
                 {cancelMutation.isPending ? 'جاري الإلغاء' : 'إلغاء'}
               </button>
+            ) : null}
+            {invoice.docstatus === 1 && invoice.is_return !== 1 && canUsePermission(permissions.canCreate) ? (
+              <Link className="button button-secondary" to={`/pos/returns?invoice=${encodeURIComponent(invoice.name)}`}>
+                <RotateCcw size={17} aria-hidden="true" />
+                مرتجع POS
+              </Link>
             ) : null}
           </>
         }

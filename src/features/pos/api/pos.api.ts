@@ -391,6 +391,10 @@ function toPosInvoicePayload(payload: PosSalePayload) {
   const conversionRate = safeNumber(payload.conversion_rate, 1) > 0 ? safeNumber(payload.conversion_rate, 1) : 1
   const invoiceDiscountAmount = calculateInvoiceDiscount(payload)
   const paidAmount = isCashSale ? calculateGrandTotal(payload) : undefined
+  const shiftReference = cleanString(payload.posOpeningEntry)
+  const remarks = [cleanString(payload.remarks), shiftReference ? `POS Opening Entry: ${shiftReference}` : undefined]
+    .filter(Boolean)
+    .join('\n')
 
   return {
     customer: payload.customer.trim(),
@@ -409,7 +413,7 @@ function toPosInvoicePayload(payload: PosSalePayload) {
     discount_amount: invoiceDiscountAmount,
     paid_amount: paidAmount,
     base_paid_amount: paidAmount ? paidAmount * conversionRate : undefined,
-    remarks: cleanString(payload.remarks),
+    remarks: cleanString(remarks),
     items: normalizeItems(payload),
     payments: normalizePayments(payload),
   }

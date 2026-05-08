@@ -1,6 +1,6 @@
 # Product Direction v1
 
-Project: ProjectK  
+Project: alpha-neqat  
 Date: 2026-04-21  
 Status: Foundation artifact  
 Language: English / Arabic
@@ -9,13 +9,13 @@ Language: English / Arabic
 
 ### EN
 
-ProjectK is a React-based ERPNext front-end modernization initiative. The product will deliver a custom, high-quality user interface while ERPNext remains the business engine and source of truth for validation, permissions, workflows, document states, relationships, calculations, and database truth.
+alpha-neqat is a React-based ERPNext front-end modernization initiative. The product will deliver a custom, high-quality user interface while ERPNext remains the business engine and source of truth for validation, permissions, workflows, document states, relationships, calculations, and database truth.
 
 The front-end must make ERPNext easier, faster, and clearer to use. It must not replace ERPNext logic, hide critical business meaning, or create client-side behavior that conflicts with the server.
 
 ### AR
 
-ProjectK هو مشروع لتحديث واجهة ERPNext باستخدام React. الهدف هو بناء واجهة مخصصة وعالية الجودة مع بقاء ERPNext هو محرك الأعمال والمصدر الأساسي للحقيقة في التحقق من البيانات والصلاحيات وسير العمل وحالات المستندات والعلاقات والحسابات وقاعدة البيانات.
+alpha-neqat هو مشروع لتحديث واجهة ERPNext باستخدام React. الهدف هو بناء واجهة مخصصة وعالية الجودة مع بقاء ERPNext هو محرك الأعمال والمصدر الأساسي للحقيقة في التحقق من البيانات والصلاحيات وسير العمل وحالات المستندات والعلاقات والحسابات وقاعدة البيانات.
 
 يجب أن تجعل الواجهة استخدام ERPNext أسهل وأسرع وأوضح، دون استبدال منطق ERPNext أو إخفاء معاني العمل المهمة أو إنشاء منطق في الواجهة يتعارض مع السيرفر.
 

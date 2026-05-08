@@ -8,6 +8,7 @@ import {
   AccountDetailsPage,
   AccountEditPage,
   AccountsListPage,
+  CashShiftsPage,
   CollectionCreatePage,
   CollectionDetailsPage,
   CollectionEditPage,
@@ -28,6 +29,7 @@ import {
   ItemsListPage,
   LoginPage,
   PosPage,
+  PosReturnsPage,
   PurchaseInvoiceCreatePage,
   PurchaseInvoiceDetailsPage,
   PurchaseInvoiceEditPage,
@@ -89,6 +91,10 @@ export const router = createBrowserRouter([
         element: routePage(<PosPage />),
       },
       {
+        path: 'pos/returns',
+        element: routePage(<PosReturnsPage />),
+      },
+      {
         element: <AdminLayout />,
         children: [
           {
@@ -111,6 +117,10 @@ export const router = createBrowserRouter([
           {
             path: 'daily-cash',
             element: routePage(<DailyCashPage />),
+          },
+          {
+            path: 'cash-shifts',
+            element: routePage(<CashShiftsPage />),
           },
           {
             path: 'statements',

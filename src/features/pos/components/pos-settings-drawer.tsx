@@ -1,6 +1,7 @@
 import { positiveNumber } from '../calculators/pos-calculations'
 import type { PosDefaults } from '../types/pos.types'
 import { PosDrawer } from './pos-drawer'
+import { displayErpLabel } from '@/shared/utils/erp-labels'
 
 interface PosSettingsDrawerProps {
   effectiveProfileName: string
@@ -43,12 +44,12 @@ export function PosSettingsDrawer({
     <PosDrawer ariaLabel="إعدادات نقطة البيع" eyebrow="الإعدادات" title="إعدادات الفاتورة والمخزون" onClose={onClose}>
       <div className="pos-settings">
         <label className="field">
-          <span>ملف POS</span>
+          <span>ملف نقطة البيع</span>
           <select value={effectiveProfileName} onChange={(event) => onProfileChange(event.target.value)}>
             <option value="">بدون ملف</option>
             {defaults?.profiles.map((profile) => (
               <option key={profile.name} value={profile.name}>
-                {profile.name}
+                {displayErpLabel(profile.name)}
               </option>
             ))}
           </select>
@@ -59,7 +60,7 @@ export function PosSettingsDrawer({
           <select value={company} onChange={(event) => onCompanyChange(event.target.value)}>
             {defaults?.companies.map((option) => (
               <option key={option.name} value={option.name}>
-                {option.name}
+                {displayErpLabel(option.name)}
               </option>
             ))}
           </select>
@@ -83,7 +84,7 @@ export function PosSettingsDrawer({
             <option value="">بدون مخزن</option>
             {defaults?.warehouses.map((option) => (
               <option key={option.name} value={option.name}>
-                {option.name}
+                {displayErpLabel(option.name)}
               </option>
             ))}
           </select>
@@ -94,7 +95,7 @@ export function PosSettingsDrawer({
           <select value={priceList} onChange={(event) => onPriceListChange(event.target.value)}>
             {defaults?.priceLists.map((option) => (
               <option key={option.name} value={option.name}>
-                {option.name}
+                {displayErpLabel(option.name)}
               </option>
             ))}
           </select>

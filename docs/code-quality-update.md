@@ -7,15 +7,15 @@ Scope: Production hardening pass for the React + ERPNext Customer foundation.
 
 ### Problem
 
-The HTTP client could attach browser-exposed API key and secret headers whenever the variables existed.
+The HTTP client previously allowed browser-exposed API key and secret headers when a feature flag was enabled.
 
 ### Cause
 
-Vite environment variables are bundled into browser code. A direct `VITE_FRAPPE_API_SECRET` is not safe for public deployments unless the app is strictly internal and controlled.
+Vite environment variables are bundled into browser code. Any `VITE_*` API secret can be inspected by a user and must not be treated as secret.
 
 ### Fix
 
-Browser token auth is now disabled by default and must be explicitly enabled with `VITE_ENABLE_BROWSER_TOKEN_AUTH=true`. The default path is same-origin `/api`, intended for a backend proxy or ERPNext session flow.
+Browser token auth has been removed from the frontend. The app now uses cookie/session-based ERPNext auth through same-origin `/api` or a trusted backend/proxy, with `withCredentials: true`.
 
 ### Updated Code
 
@@ -25,7 +25,7 @@ Browser token auth is now disabled by default and must be explicitly enabled wit
 
 ### Notes
 
-For public production deployments, use a backend proxy/session flow rather than browser-exposed API secrets.
+For public production deployments, use ERPNext session cookies, a backend-for-frontend, or a secure reverse proxy. Do not put ERPNext API secrets in `VITE_*` variables.
 
 ## 2. API Base URL Normalization
 
@@ -96,4 +96,3 @@ Customer list/detail payload mapping now uses `customer_primary_address`, while 
 ### Notes
 
 The target ERPNext instance metadata should still be verified before this field becomes mandatory or hidden in production.
-

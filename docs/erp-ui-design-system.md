@@ -1,7 +1,7 @@
 # ERP UI Design System
 
 Date: 2026-04-21  
-Scope: ProjectK React frontend for ERPNext.
+Scope: alpha-neqat React frontend for ERPNext.
 
 ## Goal
 

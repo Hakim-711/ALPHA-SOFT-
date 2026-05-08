@@ -107,6 +107,7 @@ export interface PosSalePayload {
   selling_price_list: string
   set_warehouse?: string
   pos_profile?: string
+  posOpeningEntry?: string
   receivableAccount?: string
   updateStock?: boolean
   invoiceDiscountAmount?: number

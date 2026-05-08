@@ -1,6 +1,6 @@
 # ERPNext Module Map v1
 
-Project: ProjectK  
+Project: alpha-neqat  
 Date: 2026-04-21  
 Status: Foundation artifact  
 Language: English / Arabic

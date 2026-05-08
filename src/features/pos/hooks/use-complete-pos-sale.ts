@@ -14,6 +14,7 @@ export function useCompletePosSale() {
         queryClient.invalidateQueries({ queryKey: ['collections'] }),
         queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
         queryClient.invalidateQueries({ queryKey: ['daily-cash'] }),
+        queryClient.invalidateQueries({ queryKey: ['cash-shifts'] }),
       ])
     },
   })

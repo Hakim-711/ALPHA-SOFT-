@@ -13,13 +13,25 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>
 
+function resolveSafeReturnPath(state: unknown) {
+  const fallback = '/dashboard'
+  const from = (state as { from?: { pathname?: string; search?: string; hash?: string } } | null)?.from
+  const pathname = from?.pathname
+
+  if (!pathname || !pathname.startsWith('/') || pathname.startsWith('//') || pathname.startsWith('/login')) {
+    return fallback
+  }
+
+  return `${pathname}${from.search ?? ''}${from.hash ?? ''}`
+}
+
 export default function LoginPage() {
   const auth = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [error, setError] = useState<string | null>(null)
   const [isSigningOut, setIsSigningOut] = useState(false)
-  const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? '/dashboard'
+  const from = resolveSafeReturnPath(location.state)
   const loggedOut = useMemo(() => new URLSearchParams(location.search).get('logged_out') === '1', [location.search])
   const {
     register,

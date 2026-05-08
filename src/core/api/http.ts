@@ -22,13 +22,8 @@ export const http = axios.create({
   baseURL: apiRoot,
   headers: {
     'Content-Type': 'application/json',
-    ...(env.apiKey && env.apiSecret
-      ? {
-          Authorization: `token ${env.apiKey}:${env.apiSecret}`,
-        }
-      : {}),
   },
-  withCredentials: !env.browserTokenAuthEnabled,
+  withCredentials: true,
 })
 
 function stripHtml(value: string) {

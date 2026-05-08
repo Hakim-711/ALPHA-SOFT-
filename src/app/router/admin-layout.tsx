@@ -1,53 +1,18 @@
 import {
-  BarChart3,
   Bell,
-  Boxes,
-  Building2,
   ChevronDown,
-  CircleDollarSign,
-  ClipboardCheck,
-  FileText,
-  HandCoins,
-  LayoutDashboard,
   LogOut,
-  Package,
   PanelLeftClose,
   PanelLeftOpen,
   ScanBarcode,
-  Settings,
   ShieldCheck,
-  ShoppingBasket,
-  Truck,
-  UserCog,
-  UsersRound,
-  Wallet,
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/features/auth/hooks/use-auth'
 import { GlobalSearch } from '@/features/global-search/components/global-search'
 import { canUsePermission, useDoctypePermissions } from '@/features/permissions/hooks/use-doctype-permissions'
-
-const navItems = [
-  { label: 'لوحة التحكم', path: '/dashboard', icon: LayoutDashboard, enabled: true, section: 'مساحة العمل' },
-  { label: 'العملاء', path: '/customers', icon: UsersRound, enabled: true, section: 'مساحة العمل' },
-  { label: 'المنتجات', path: '/items', icon: Package, enabled: true, section: 'مساحة العمل' },
-  { label: 'نقطة البيع POS', path: '/pos', icon: ScanBarcode, enabled: true, section: 'مساحة العمل' },
-  { label: 'أوامر البيع', path: '/sales-orders', icon: FileText, enabled: true, section: 'المبيعات' },
-  { label: 'فواتير البيع', path: '/sales-invoices', icon: Building2, enabled: true, section: 'المبيعات' },
-  { label: 'الموردون', path: '/suppliers', icon: Truck, enabled: true, section: 'المشتريات' },
-  { label: 'أوامر الشراء', path: '/purchase-orders', icon: FileText, enabled: true, section: 'المشتريات' },
-  { label: 'فواتير الشراء', path: '/purchase-invoices', icon: ShoppingBasket, enabled: true, section: 'المشتريات' },
-  { label: 'الصندوق اليومي', path: '/daily-cash', icon: Wallet, enabled: true, section: 'المالية' },
-  { label: 'كشوف الحساب', path: '/statements', icon: FileText, enabled: true, section: 'المالية' },
-  { label: 'التحصيلات', path: '/collections', icon: HandCoins, enabled: true, section: 'المالية' },
-  { label: 'سندات الصرف', path: '/disbursements', icon: CircleDollarSign, enabled: true, section: 'المالية' },
-  { label: 'حركات المخزون', path: '/stock', icon: Boxes, enabled: true, section: 'التشغيل' },
-  { label: 'الجرد والتسوية', path: '/stock-reconciliations', icon: ClipboardCheck, enabled: true, section: 'التشغيل' },
-  { label: 'التقارير', path: '/reports', icon: BarChart3, enabled: true, section: 'التشغيل' },
-  { label: 'الحسابات والصلاحيات', path: '/accounts', icon: UserCog, enabled: true, section: 'النظام' },
-  { label: 'الإعدادات', path: '/settings', icon: Settings, enabled: true, section: 'النظام' },
-] as const
+import { navItems, navSections } from './navigation'
 
 function resolveTopbarCopy(pathname: string) {
   if (pathname.startsWith('/dashboard')) {
@@ -75,6 +40,13 @@ function resolveTopbarCopy(pathname: string) {
     return {
       eyebrow: 'المبيعات / نقطة البيع',
       title: 'نقطة البيع POS',
+    }
+  }
+
+  if (pathname.startsWith('/cash-shifts')) {
+    return {
+      eyebrow: 'المالية / ورديات POS',
+      title: 'ورديات الكاشير وإغلاق الصندوق',
     }
   }
 
@@ -192,9 +164,9 @@ export function AdminLayout() {
   const salesInvoicePermissions = useDoctypePermissions('Sales Invoice')
   const purchaseOrderPermissions = useDoctypePermissions('Purchase Order')
   const purchaseInvoicePermissions = useDoctypePermissions('Purchase Invoice')
+  const posOpeningPermissions = useDoctypePermissions('POS Opening Entry')
   const stockEntryPermissions = useDoctypePermissions('Stock Entry')
   const stockReconciliationPermissions = useDoctypePermissions('Stock Reconciliation')
-  const navSections = ['مساحة العمل', 'المبيعات', 'المشتريات', 'المالية', 'التشغيل', 'النظام']
   const CollapseIcon = isCollapsed ? PanelLeftOpen : PanelLeftClose
   const topbarCopy = resolveTopbarCopy(location.pathname)
   const currentIdentity = auth.user?.name ?? auth.user?.email ?? 'unknown'
@@ -267,6 +239,10 @@ export function AdminLayout() {
 
     if (item.path === '/pos') {
       return canOpenPos
+    }
+
+    if (item.path === '/cash-shifts') {
+      return canUsePermission(posOpeningPermissions.canRead) || canOpenPos
     }
 
     if (item.path === '/stock') {

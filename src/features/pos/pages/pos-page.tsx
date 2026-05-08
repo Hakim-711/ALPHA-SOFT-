@@ -3,7 +3,9 @@ import {
   Barcode,
   Calculator,
   Gauge,
+  AlertTriangle,
   CreditCard,
+  DoorOpen,
   LayoutDashboard,
   ExternalLink,
   Filter,
@@ -52,10 +54,12 @@ import { readHeldCarts, writeHeldCarts } from '../storage/held-carts-storage'
 import type { HeldPosCart, PosCartLine, PosItemSearchResult, PosPaymentDraftLine, PosPaymentLine } from '../types/pos.types'
 import { addDays, today } from '../utils/pos-date'
 import { useAuth } from '@/features/auth/hooks/use-auth'
+import { useActiveCashShift } from '@/features/cash-shifts/hooks/use-cash-shifts'
 import { canUsePermission, useDoctypePermissions } from '@/features/permissions/hooks/use-doctype-permissions'
 import { ErrorState } from '@/shared/ui/error-state'
 import { LinkDatalistInput } from '@/shared/ui/link-datalist-input'
 import { Loading } from '@/shared/ui/loading'
+import { displayErpLabel } from '@/shared/utils/erp-labels'
 import { formatMoney } from '@/shared/utils/format'
 import { getStorePreferences } from '@/core/config/store-preferences'
 
@@ -174,6 +178,21 @@ export default function PosPage() {
   const paymentsHaveAccounts = paymentsWithAmount.every((payment) => Boolean(payment.account?.trim()))
   const stockIssueLines = useMemo(() => findStockIssueLines(cart, updateStock), [cart, updateStock])
   const stockRequirementMet = stockIssueLines.length === 0
+  const canUsePos =
+    canUsePermission(salesInvoicePermissions.canCreate) &&
+    canUsePermission(salesInvoicePermissions.canSubmit) &&
+    canUsePermission(itemPermissions.canRead)
+  const activeShiftQuery = useActiveCashShift(effectiveProfileName, auth.user?.name ?? auth.user?.email, canUsePos && Boolean(effectiveProfileName))
+  const activeCashShift = activeShiftQuery.data
+  const cashShiftReady = Boolean(activeCashShift)
+  const hasPosNotices =
+    Boolean(posError) ||
+    activeShiftQuery.isError ||
+    !cashShiftReady ||
+    Boolean(offlineQueue.lastSyncMessage) ||
+    offlineQueue.queuedCount > 0 ||
+    stockIssueLines.length > 0 ||
+    Boolean(completedInvoiceName)
   const creditSaleHasNoPayment = saleMode !== 'credit' || paymentTotal === 0
   const paymentRequirementMet =
     saleMode === 'cash'
@@ -194,11 +213,8 @@ export default function PosPage() {
     receivableRequirementMet &&
     creditSaleHasNoPayment &&
     (saleMode !== 'partial' || canUsePartialPayment) &&
-    stockRequirementMet
-  const canUsePos =
-    canUsePermission(salesInvoicePermissions.canCreate) &&
-    canUsePermission(salesInvoicePermissions.canSubmit) &&
-    canUsePermission(itemPermissions.canRead)
+    stockRequirementMet &&
+    cashShiftReady
 
   function focusScanner() {
     scanInputRef.current?.focus()
@@ -526,6 +542,7 @@ export default function PosPage() {
       selling_price_list: priceList,
       set_warehouse: warehouse,
       pos_profile: effectiveProfileName,
+      posOpeningEntry: activeCashShift?.name,
       receivableAccount,
       updateStock,
       invoiceDiscountAmount: safeInvoiceDiscountAmount,
@@ -551,6 +568,11 @@ export default function PosPage() {
 
       if (saleMode === 'partial' && !canUsePartialPayment) {
         setPosError('الدفعة الجزئية تحتاج صلاحية إنشاء واعتماد سند قبض Payment Entry.')
+        return
+      }
+
+      if (!cashShiftReady) {
+        setPosError('افتح وردية الكاشير قبل اعتماد البيع. هذا يمنع ضياع الصندوق ويسمح بإغلاق اليوم ومطابقة النقد الفعلي.')
         return
       }
 
@@ -667,7 +689,7 @@ export default function PosPage() {
     return () => window.removeEventListener('keydown', handleShortcut)
   }, [canCompleteSale, completeSaleMutation.isPending, grandTotal])
 
-  if (salesInvoicePermissions.isLoading || itemPermissions.isLoading || defaultsQuery.isLoading) {
+  if (salesInvoicePermissions.isLoading || itemPermissions.isLoading || defaultsQuery.isLoading || activeShiftQuery.isLoading) {
     return <Loading />
   }
 
@@ -687,12 +709,20 @@ export default function PosPage() {
             <ShoppingCart size={21} />
           </span>
           <div>
-          <p className="eyebrow">POS</p>
+          <p className="eyebrow">نقطة البيع</p>
           <h2>الكاشير</h2>
           <p>{offlineQueue.isOnline ? 'جاهز للبيع' : 'وضع أوفلاين'}</p>
           </div>
         </div>
         <div className="pos-toolbar-actions">
+          <Link className="button button-secondary" to="/cash-shifts">
+            <DoorOpen size={17} aria-hidden="true" />
+            الوردية
+          </Link>
+          <Link className="button button-secondary" to="/pos/returns">
+            <RotateCcw size={17} aria-hidden="true" />
+            مرتجع
+          </Link>
           <Link className="button button-secondary" to="/dashboard">
             <LayoutDashboard size={17} aria-hidden="true" />
             لوحة التحكم
@@ -708,6 +738,10 @@ export default function PosPage() {
           <span className={offlineQueue.isOnline ? 'pos-stock-mode-chip active' : 'pos-stock-mode-chip warning'}>
             <Gauge size={16} aria-hidden="true" />
             {offlineQueue.isOnline ? 'متصل' : 'غير متصل'}
+          </span>
+          <span className={cashShiftReady ? 'pos-stock-mode-chip active' : 'pos-stock-mode-chip warning'}>
+            <DoorOpen size={16} aria-hidden="true" />
+            {cashShiftReady ? `وردية ${activeCashShift?.name}` : 'لا توجد وردية'}
           </span>
           {offlineQueue.queuedCount > 0 ? (
             <button
@@ -774,6 +808,10 @@ export default function PosPage() {
           <div>
             <span>المعلقة</span>
             <strong>{heldCarts.length + offlineQueue.queuedCount}</strong>
+          </div>
+          <div>
+            <span>الوردية</span>
+            <strong>{cashShiftReady ? 'مفتوحة' : 'مغلقة'}</strong>
           </div>
         </div>
 
@@ -878,7 +916,28 @@ export default function PosPage() {
         </section>
       ) : null}
 
-      {posError ? <ErrorState message={posError} /> : null}
+      {hasPosNotices ? (
+        <section className="pos-notice-stack" aria-label="تنبيهات نقطة البيع" aria-live="polite">
+          {posError ? (
+            <div className="inline-alert inline-alert-danger" role="alert">
+              <AlertTriangle size={18} aria-hidden="true" />
+              <span>{posError}</span>
+            </div>
+          ) : null}
+          {activeShiftQuery.isError ? (
+            <div className="inline-alert inline-alert-danger" role="alert">
+              <AlertTriangle size={18} aria-hidden="true" />
+              <span>تعذر التحقق من وردية الكاشير. راجع صلاحيات وردية افتتاح الكاشير أو افتح صفحة الورديات.</span>
+              <Link to="/cash-shifts">فتح الورديات</Link>
+            </div>
+          ) : null}
+          {!activeShiftQuery.isError && !cashShiftReady ? (
+            <div className="inline-alert inline-alert-warning" role="status">
+              <DoorOpen size={18} aria-hidden="true" />
+              <span>لا توجد وردية كاشير مفتوحة. افتح وردية قبل اعتماد البيع حتى يتم إغلاق الصندوق بشكل صحيح.</span>
+              <Link to="/cash-shifts">فتح وردية</Link>
+            </div>
+          ) : null}
       {offlineQueue.lastSyncMessage ? (
         <div className="inline-alert inline-alert-success" role="status">
           <ReceiptText size={18} aria-hidden="true" />
@@ -915,6 +974,8 @@ export default function PosPage() {
           </Link>
         </div>
       ) : null}
+        </section>
+      ) : null}
 
       <section className="pos-layout">
         <div className="pos-sale-area">
@@ -940,7 +1001,7 @@ export default function PosPage() {
                 <option value="">كل الأقسام</option>
                 {defaults?.itemGroups.map((group) => (
                   <option key={group.name} value={group.name}>
-                    {group.name}
+                    {displayErpLabel(group.name)}
                   </option>
                 ))}
               </select>
@@ -951,7 +1012,7 @@ export default function PosPage() {
                 <option value="">كل الماركات</option>
                 {defaults?.brands.map((brand) => (
                   <option key={brand.name} value={brand.name}>
-                    {brand.name}
+                    {displayErpLabel(brand.name)}
                   </option>
                 ))}
               </select>
@@ -985,7 +1046,7 @@ export default function PosPage() {
                 type="button"
                 onClick={() => setSelectedItemGroup(group.name)}
               >
-                {group.name}
+                {displayErpLabel(group.name)}
               </button>
             ))}
           </div>
@@ -1021,7 +1082,7 @@ export default function PosPage() {
                 <b>
                   {formatMoney(item.price_list_rate ?? item.standard_rate ?? 0)} {currency}
                 </b>
-                <small>{item.item_group || item.brand || 'صنف بيع'}</small>
+                <small>{displayErpLabel(item.item_group || item.brand || 'صنف بيع')}</small>
                 {updateStock && typeof item.actual_qty === 'number' ? <em>المتاح: {formatMoney(item.actual_qty)}</em> : null}
                 {!updateStock ? <em>بدون تأثير مخزون</em> : null}
               </button>
@@ -1217,7 +1278,7 @@ export default function PosPage() {
                         .filter((option) => !company || option.company === company)
                         .map((option) => (
                           <option key={option.name} value={option.name}>
-                            {option.name}
+                            {displayErpLabel(option.name)}
                           </option>
                         ))}
                     </select>
@@ -1334,6 +1395,10 @@ export default function PosPage() {
       ) : null}
 
       <section className="pos-register-footer" aria-label="أوامر الكاشير السريعة">
+        <Link to="/cash-shifts">
+          <DoorOpen size={17} aria-hidden="true" />
+          {cashShiftReady ? 'إغلاق الوردية' : 'فتح الوردية'}
+        </Link>
         <button type="button" onClick={focusScanner}>
           <Search size={17} aria-hidden="true" />
           بحث / باركود

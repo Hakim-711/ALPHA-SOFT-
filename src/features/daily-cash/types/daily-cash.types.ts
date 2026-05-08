@@ -26,7 +26,7 @@ export interface DailyCashFilters {
 
 export interface DailyCashMovement {
   id: string
-  type: 'collection' | 'disbursement' | 'transfer-in' | 'transfer-out' | 'pos-sale'
+  type: 'collection' | 'disbursement' | 'customer-refund' | 'transfer-in' | 'transfer-out' | 'pos-sale'
   label: string
   reference: string
   postingDate: string
@@ -54,11 +54,13 @@ export interface DailyCashReport {
   reconciliationGap: number
   collectionsTotal: number
   disbursementsTotal: number
+  customerRefundsTotal: number
   posSalesTotal: number
   transferInTotal: number
   transferOutTotal: number
   collectionsCount: number
   disbursementsCount: number
+  customerRefundsCount: number
   posSalesCount: number
   transfersCount: number
   movements: DailyCashMovement[]

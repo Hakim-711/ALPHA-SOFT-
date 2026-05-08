@@ -3,6 +3,7 @@ import type { RefObject } from 'react'
 import { nonNegativeMoney, roundMoney } from '../calculators/pos-calculations'
 import type { PosAccountOption, PosDefaults, PosPaymentDraftLine, PosPaymentLine } from '../types/pos.types'
 import { PosDrawer } from './pos-drawer'
+import { displayErpLabel } from '@/shared/utils/erp-labels'
 import { formatMoney } from '@/shared/utils/format'
 
 interface PosPaymentDrawerProps {
@@ -124,7 +125,7 @@ export function PosPaymentDrawer({
             <select value={paymentMode} onChange={(event) => onPaymentModeChange(event.target.value)}>
               {paymentModes.map((option) => (
                 <option key={option.name} value={option.name}>
-                  {option.name}
+                  {displayErpLabel(option.name)}
                 </option>
               ))}
             </select>
@@ -136,7 +137,7 @@ export function PosPaymentDrawer({
               <option value="">من إعدادات ERPNext</option>
               {paymentAccounts.map((option) => (
                 <option key={option.name} value={option.name}>
-                  {option.name}
+                  {displayErpLabel(option.name)}
                 </option>
               ))}
             </select>
@@ -166,7 +167,7 @@ export function PosPaymentDrawer({
               <select value={payment.mode_of_payment} onChange={(event) => onUpdatePaymentLine(payment.id, { mode_of_payment: event.target.value })}>
                 {paymentModes.map((option) => (
                   <option key={option.name} value={option.name}>
-                    {option.name}
+                    {displayErpLabel(option.name)}
                   </option>
                 ))}
               </select>
@@ -177,7 +178,7 @@ export function PosPaymentDrawer({
                 <option value="">من إعدادات ERPNext</option>
                 {paymentAccounts.map((option) => (
                   <option key={option.name} value={option.name}>
-                    {option.name}
+                    {displayErpLabel(option.name)}
                   </option>
                 ))}
               </select>

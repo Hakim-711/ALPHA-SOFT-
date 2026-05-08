@@ -263,7 +263,7 @@ export default function DailyCashPage() {
           value={`${formatMoney(report.incomingTotal)} ${accountCurrency}`}
         />
         <MetricCard
-          detail="صرف موردين + تحويلات صادرة"
+          detail="صرف موردين + استرداد عملاء + تحويلات صادرة"
           icon={ArrowUpRight}
           label="الخروج"
           tone="red"
@@ -288,6 +288,7 @@ export default function DailyCashPage() {
       <section className="metrics-grid" aria-label="تفصيل الحركة اليومية">
         <MetricCard detail={`عدد السندات: ${report.collectionsCount}`} icon={ArrowDownLeft} label="التحصيلات" tone="green" value={formatMoney(report.collectionsTotal)} />
         <MetricCard detail={`عدد السندات: ${report.disbursementsCount}`} icon={ArrowUpRight} label="المدفوعات" tone="red" value={formatMoney(report.disbursementsTotal)} />
+        <MetricCard detail={`عدد سندات الاسترداد: ${report.customerRefundsCount}`} icon={ArrowUpRight} label="استرداد العملاء" tone="red" value={formatMoney(report.customerRefundsTotal)} />
         <MetricCard detail={`عدد الفواتير: ${report.posSalesCount}`} icon={ReceiptText} label="البيع النقدي" tone="blue" value={formatMoney(report.posSalesTotal)} />
         <MetricCard detail={`عدد التحويلات: ${report.transfersCount}`} icon={Scale} label="التحويلات" tone="amber" value={formatMoney(report.transferInTotal - report.transferOutTotal)} />
       </section>

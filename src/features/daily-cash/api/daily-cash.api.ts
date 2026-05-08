@@ -228,7 +228,7 @@ export async function getDailyCashReport(filters: DailyCashFilters): Promise<Dai
     throw new Error('تعذر العثور على الحساب النقدي المحدد لهذه الشركة.')
   }
 
-  const [glEntriesBefore, glEntriesToday, collections, disbursements, transfers, posSales] = await Promise.all([
+  const [glEntriesBefore, glEntriesToday, collections, disbursements, customerRefunds, transfers, posSales] = await Promise.all([
     fetchAllRows<GlEntryRow>('GL Entry', {
       fields: glEntryFields(),
       filters: [
@@ -267,6 +267,18 @@ export async function getDailyCashReport(filters: DailyCashFilters): Promise<Dai
         ['Payment Entry', 'docstatus', '=', 1],
         ['Payment Entry', 'payment_type', '=', 'Pay'],
         ['Payment Entry', 'party_type', '=', 'Supplier'],
+        ['Payment Entry', 'company', '=', company],
+        ['Payment Entry', 'posting_date', '=', date],
+        buildAccountMatch('paid_from', selectedAccount.name),
+      ],
+      orderBy: 'posting_date desc, modified desc',
+    }),
+    fetchAllRows<PaymentEntryRow>('Payment Entry', {
+      fields: paymentEntryFields(),
+      filters: [
+        ['Payment Entry', 'docstatus', '=', 1],
+        ['Payment Entry', 'payment_type', '=', 'Pay'],
+        ['Payment Entry', 'party_type', '=', 'Customer'],
         ['Payment Entry', 'company', '=', company],
         ['Payment Entry', 'posting_date', '=', date],
         buildAccountMatch('paid_from', selectedAccount.name),
@@ -316,13 +328,14 @@ export async function getDailyCashReport(filters: DailyCashFilters): Promise<Dai
 
   const collectionsTotal = roundAmount(collections.reduce((sum, row) => sum + (row.received_amount ?? 0), 0))
   const disbursementsTotal = roundAmount(disbursements.reduce((sum, row) => sum + (row.paid_amount ?? 0), 0))
+  const customerRefundsTotal = roundAmount(customerRefunds.reduce((sum, row) => sum + (row.paid_amount ?? 0), 0))
   const posSalesTotal = roundAmount(posSales.reduce((sum, row) => sum + (row.grand_total ?? 0), 0))
   const transferInRows = transfers.filter((row) => row.paid_to === selectedAccount.name)
   const transferOutRows = transfers.filter((row) => row.paid_from === selectedAccount.name)
   const transferInTotal = roundAmount(transferInRows.reduce((sum, row) => sum + (row.received_amount ?? 0), 0))
   const transferOutTotal = roundAmount(transferOutRows.reduce((sum, row) => sum + (row.paid_amount ?? 0), 0))
   const incomingTotal = roundAmount(collectionsTotal + posSalesTotal + transferInTotal)
-  const outgoingTotal = roundAmount(disbursementsTotal + transferOutTotal)
+  const outgoingTotal = roundAmount(disbursementsTotal + customerRefundsTotal + transferOutTotal)
   const netMovement = roundAmount(incomingTotal - outgoingTotal)
   const expectedClosingBalance = roundAmount(openingBalance + netMovement)
   const reconciliationGap = roundAmount(ledgerClosingBalance - expectedClosingBalance)
@@ -357,6 +370,20 @@ export async function getDailyCashReport(filters: DailyCashFilters): Promise<Dai
       netAmount: -Math.abs(row.paid_amount ?? 0),
       note: row.mode_of_payment || row.reference_no || row.remarks,
       path: `/disbursements/${encodeURIComponent(row.name)}`,
+    })),
+    ...customerRefunds.map((row) => ({
+      id: `customer-refund-${row.name}`,
+      type: 'customer-refund' as const,
+      label: 'استرداد عميل',
+      reference: row.name,
+      postingDate: row.posting_date,
+      party: row.party_name || row.party,
+      account: row.paid_from || selectedAccount.name,
+      counterAccount: row.paid_to,
+      currency: row.paid_from_account_currency || selectedAccount.account_currency,
+      amount: row.paid_amount ?? 0,
+      netAmount: -Math.abs(row.paid_amount ?? 0),
+      note: row.mode_of_payment || row.reference_no || row.remarks || 'استرداد مرتجع نقطة بيع',
     })),
     ...posSales.map((row) => ({
       id: `pos-${row.name}`,
@@ -432,6 +459,7 @@ export async function getDailyCashReport(filters: DailyCashFilters): Promise<Dai
   const lastSyncedAt = maxDate([
     ...collections.map((row) => row.modified),
     ...disbursements.map((row) => row.modified),
+    ...customerRefunds.map((row) => row.modified),
     ...posSales.map((row) => row.modified),
     ...transfers.map((row) => row.modified),
   ]) ?? new Date().toISOString()
@@ -450,11 +478,13 @@ export async function getDailyCashReport(filters: DailyCashFilters): Promise<Dai
     reconciliationGap,
     collectionsTotal,
     disbursementsTotal,
+    customerRefundsTotal,
     posSalesTotal,
     transferInTotal,
     transferOutTotal,
     collectionsCount: collections.length,
     disbursementsCount: disbursements.length,
+    customerRefundsCount: customerRefunds.length,
     posSalesCount: posSales.length,
     transfersCount: transfers.length,
     movements: movementRows,
