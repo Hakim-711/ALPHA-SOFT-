@@ -2,6 +2,7 @@ import { ArrowLeft, Boxes, Edit, FileCheck2, Power, Receipt, Wallet } from 'luci
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { Badge } from '@/shared/ui/badge'
 import { Breadcrumbs } from '@/shared/ui/breadcrumbs'
+import { ConfirmActionButton } from '@/shared/ui/confirm-action-button'
 import { ErrorState } from '@/shared/ui/error-state'
 import { Loading } from '@/shared/ui/loading'
 import { MetricCard } from '@/shared/ui/metric-card'
@@ -77,16 +78,30 @@ export default function StockDetailsPage() {
               </Link>
             ) : null}
             {entry.docstatus === 0 && canUsePermission(permissions.canSubmit) ? (
-              <button className="button button-primary" disabled={submitMutation.isPending} onClick={() => submitMutation.mutate(entry)}>
+              <ConfirmActionButton
+                className="button button-primary"
+                confirmActionLabel="اعتماد الحركة"
+                confirmMessage="سيتم اعتماد حركة المخزون داخل ERPNext وقد تؤثر مباشرة على أرصدة المستودعات وتكلفة المخزون."
+                confirmTitle="اعتماد حركة المخزون؟"
+                disabled={submitMutation.isPending}
+                onConfirm={() => submitMutation.mutate(entry)}
+              >
                 <FileCheck2 size={17} aria-hidden="true" />
                 {submitMutation.isPending ? 'جاري الاعتماد' : 'اعتماد'}
-              </button>
+              </ConfirmActionButton>
             ) : null}
             {entry.docstatus === 1 && canUsePermission(permissions.canCancel) ? (
-              <button className="button button-danger" disabled={cancelMutation.isPending} onClick={() => cancelMutation.mutate(entry)}>
+              <ConfirmActionButton
+                className="button button-danger"
+                confirmActionLabel="إلغاء الحركة"
+                confirmMessage="إلغاء حركة المخزون إجراء حساس وقد يعكس أثرها على دفتر المخزون والمستودعات."
+                confirmTitle="إلغاء حركة المخزون؟"
+                disabled={cancelMutation.isPending}
+                onConfirm={() => cancelMutation.mutate(entry)}
+              >
                 <Power size={17} aria-hidden="true" />
                 {cancelMutation.isPending ? 'جاري الإلغاء' : 'إلغاء'}
-              </button>
+              </ConfirmActionButton>
             ) : null}
           </>
         }

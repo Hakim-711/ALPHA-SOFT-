@@ -2,6 +2,7 @@ import { ArrowLeft, Edit, FileCheck2, HandCoins, Power, Scale, Wallet } from 'lu
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { Badge } from '@/shared/ui/badge'
 import { Breadcrumbs } from '@/shared/ui/breadcrumbs'
+import { ConfirmActionButton } from '@/shared/ui/confirm-action-button'
 import { ErrorState } from '@/shared/ui/error-state'
 import { Loading } from '@/shared/ui/loading'
 import { MetricCard } from '@/shared/ui/metric-card'
@@ -66,16 +67,30 @@ export default function CollectionDetailsPage() {
               </Link>
             ) : null}
             {collection.docstatus === 0 && canUsePermission(permissions.canSubmit) ? (
-              <button className="button button-primary" disabled={submitMutation.isPending} onClick={() => submitMutation.mutate(collection)}>
+              <ConfirmActionButton
+                className="button button-primary"
+                confirmActionLabel="اعتماد السند"
+                confirmMessage="سيتم اعتماد سند القبض داخل ERPNext وربطه بحساب الصندوق والذمم حسب بيانات السند."
+                confirmTitle="اعتماد سند القبض؟"
+                disabled={submitMutation.isPending}
+                onConfirm={() => submitMutation.mutate(collection)}
+              >
                 <FileCheck2 size={17} aria-hidden="true" />
                 {submitMutation.isPending ? 'جاري الاعتماد' : 'اعتماد'}
-              </button>
+              </ConfirmActionButton>
             ) : null}
             {collection.docstatus === 1 && canUsePermission(permissions.canCancel) ? (
-              <button className="button button-danger" disabled={cancelMutation.isPending} onClick={() => cancelMutation.mutate(collection)}>
+              <ConfirmActionButton
+                className="button button-danger"
+                confirmActionLabel="إلغاء السند"
+                confirmMessage="إلغاء سند القبض إجراء حساس وقد يعكس أثر التحصيل من الصندوق والذمم."
+                confirmTitle="إلغاء سند القبض؟"
+                disabled={cancelMutation.isPending}
+                onConfirm={() => cancelMutation.mutate(collection)}
+              >
                 <Power size={17} aria-hidden="true" />
                 {cancelMutation.isPending ? 'جاري الإلغاء' : 'إلغاء'}
-              </button>
+              </ConfirmActionButton>
             ) : null}
           </>
         }
