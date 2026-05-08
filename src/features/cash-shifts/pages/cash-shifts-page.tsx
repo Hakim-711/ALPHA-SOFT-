@@ -14,6 +14,7 @@ import {
 import { FormEvent, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/features/auth/hooks/use-auth'
+import { canUsePermission, useDoctypePermissions } from '@/features/permissions/hooks/use-doctype-permissions'
 import { Badge } from '@/shared/ui/badge'
 import { Breadcrumbs } from '@/shared/ui/breadcrumbs'
 import { EmptyState } from '@/shared/ui/empty-state'
@@ -50,6 +51,8 @@ export default function CashShiftsPage() {
   const auth = useAuth()
   const defaultsQuery = useCashShiftDefaults()
   const shiftsQuery = useCashShifts({ limit: 12 })
+  const openingPermissions = useDoctypePermissions('POS Opening Entry')
+  const closingPermissions = useDoctypePermissions('POS Closing Entry')
   const openMutation = useOpenCashShift()
   const closeMutation = useCloseCashShift()
   const defaults = defaultsQuery.data
@@ -77,10 +80,28 @@ export default function CashShiftsPage() {
   const activeShift = activeShiftQuery.data
   const summaryQuery = useCashShiftSummary(activeShift)
   const summary = summaryQuery.data
+  const fallbackClosingRows = useMemo<CashShiftPaymentRow[]>(
+    () =>
+      activeShift && summary && summary.paymentRows.length === 0
+        ? (defaults?.paymentModes ?? []).slice(0, 4).map((mode) => ({
+            mode_of_payment: mode.name,
+            opening_amount: 0,
+            sales_amount: 0,
+            collection_amount: 0,
+            disbursement_amount: 0,
+            customer_refund_amount: 0,
+            expected_amount: 0,
+            counted_amount: 0,
+            difference_amount: 0,
+          }))
+        : [],
+    [activeShift, defaults?.paymentModes, summary],
+  )
+  const effectiveSummaryRows = summary?.paymentRows.length ? summary.paymentRows : fallbackClosingRows
   const rowsWithDifferences = useMemo<CashShiftPaymentRow[]>(() => {
     const countedByMode = new Map(countedRows.map((row) => [row.mode_of_payment, row.counted_amount]))
 
-    return (summary?.paymentRows ?? []).map((row) => {
+    return effectiveSummaryRows.map((row) => {
       const countedAmount = countedByMode.get(row.mode_of_payment) ?? row.expected_amount
 
       return {
@@ -89,8 +110,22 @@ export default function CashShiftsPage() {
         difference_amount: countedAmount - row.expected_amount,
       }
     })
-  }, [countedRows, summary?.paymentRows])
+  }, [countedRows, effectiveSummaryRows])
   const totalDifference = rowsWithDifferences.reduce((sum, row) => sum + row.difference_amount, 0)
+  const canOpenShift = canUsePermission(openingPermissions.canCreate) && canUsePermission(openingPermissions.canSubmit)
+  const canCloseShift = canUsePermission(closingPermissions.canCreate) && canUsePermission(closingPermissions.canSubmit)
+  const openBlockers = [
+    canOpenShift ? undefined : 'صلاحية إنشاء واعتماد POS Opening Entry غير متوفرة.',
+    selectedProfile || effectiveProfile?.name ? undefined : 'لا يوجد POS Profile مفعل من ERPNext.',
+    effectiveCompany ? undefined : 'لا توجد شركة مرتبطة بالوردية.',
+    currentUser ? undefined : 'لا يوجد مستخدم كاشير معروف في الجلسة.',
+    effectiveOpeningRows.length > 0 ? undefined : 'لا توجد طرق دفع مفعلة لفتح رصيد الصندوق.',
+  ].filter((message): message is string => Boolean(message))
+  const closeBlockers = [
+    canCloseShift ? undefined : 'صلاحية إنشاء واعتماد POS Closing Entry غير متوفرة.',
+    summary ? undefined : 'لم يكتمل تحميل ملخص الوردية.',
+    rowsWithDifferences.length > 0 ? undefined : 'لا توجد طرق دفع أو صفوف جرد لإغلاق الوردية.',
+  ].filter((message): message is string => Boolean(message))
 
   function updateOpeningAmount(mode: string, value: string) {
     setOpeningRows((current) =>
@@ -143,11 +178,14 @@ export default function CashShiftsPage() {
 
     await closeMutation.mutateAsync({
       shift: activeShift,
-      summary,
+      summary: {
+        ...summary,
+        paymentRows: effectiveSummaryRows,
+      },
       countedRows:
         countedRows.length > 0
           ? countedRows
-          : summary.paymentRows.map((row) => ({
+          : effectiveSummaryRows.map((row) => ({
               mode_of_payment: row.mode_of_payment,
               counted_amount: row.expected_amount,
             })),
@@ -157,7 +195,7 @@ export default function CashShiftsPage() {
     setClosingNotes('')
   }
 
-  if (defaultsQuery.isLoading || shiftsQuery.isLoading || activeShiftQuery.isLoading) {
+  if (defaultsQuery.isLoading || shiftsQuery.isLoading || activeShiftQuery.isLoading || openingPermissions.isLoading || closingPermissions.isLoading) {
     return <Loading />
   }
 
@@ -327,11 +365,17 @@ export default function CashShiftsPage() {
                     <span>إجمالي الفرق</span>
                     <strong className={Math.abs(totalDifference) < 0.01 ? 'amount-positive' : 'amount-danger'}>{formatMoney(totalDifference)}</strong>
                   </div>
-                  <button className="button button-primary" disabled={closeMutation.isPending || rowsWithDifferences.length === 0} type="submit">
+                  <button className="button button-primary" disabled={closeMutation.isPending || closeBlockers.length > 0} type="submit">
                     <CheckCircle2 size={17} aria-hidden="true" />
                     {closeMutation.isPending ? 'جاري إغلاق الوردية' : 'إغلاق الوردية'}
                   </button>
                 </div>
+
+                {closeBlockers.length > 0 ? (
+                  <div className="inline-alert inline-alert-warning" role="status">
+                    <span>لا يمكن إغلاق الوردية الآن: {closeBlockers.join(' ')}</span>
+                  </div>
+                ) : null}
 
                 {closeMutation.isError ? (
                   <div className="inline-alert inline-alert-danger" role="alert">
@@ -419,13 +463,19 @@ export default function CashShiftsPage() {
           <div className="page-actions">
             <button
               className="button button-primary"
-              disabled={openMutation.isPending || !(selectedProfile || effectiveProfile?.name) || !effectiveCompany || !currentUser}
+              disabled={openMutation.isPending || openBlockers.length > 0}
               type="submit"
             >
               <Coins size={17} aria-hidden="true" />
               {openMutation.isPending ? 'جاري فتح الوردية' : 'فتح الوردية'}
             </button>
           </div>
+
+          {openBlockers.length > 0 ? (
+            <div className="inline-alert inline-alert-warning" role="status">
+              <span>لا يمكن فتح الوردية الآن: {openBlockers.join(' ')}</span>
+            </div>
+          ) : null}
 
           {openMutation.isError ? (
             <div className="inline-alert inline-alert-danger" role="alert">
@@ -481,6 +531,7 @@ export default function CashShiftsPage() {
                       <Badge tone={shift.status === 'open' ? 'green' : shift.status === 'closed' ? 'blue' : 'neutral'}>
                         {shift.status === 'open' ? 'مفتوحة' : shift.status === 'closed' ? 'مغلقة' : displayErpLabel(shift.rawStatus ?? shift.status)}
                       </Badge>
+                      {shift.closingEntry ? <div className="muted">{shift.closingEntry}</div> : null}
                     </td>
                     <td>{displayErpLabel(shift.pos_profile)}</td>
                     <td>{displayErpLabel(shift.cashier ?? shift.user ?? shift.owner)}</td>

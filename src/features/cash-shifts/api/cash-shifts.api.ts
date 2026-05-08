@@ -47,6 +47,17 @@ interface PaymentEntryRow {
   posting_date?: string
 }
 
+interface PosClosingEntryRow {
+  name: string
+  pos_opening_entry?: string
+  docstatus?: 0 | 1 | 2
+  status?: string
+  period_end_date?: string
+  posting_date?: string
+  creation?: string
+  modified?: string
+}
+
 const POS_OPENING_ENTRY = 'POS Opening Entry'
 const POS_CLOSING_ENTRY = 'POS Closing Entry'
 
@@ -208,7 +219,51 @@ async function listRecentSubmittedOpenings(limit = 50) {
     },
   })
 
-  return response.data.data.map(normalizeShift)
+  return applyClosingEntries(response.data.data.map(normalizeShift))
+}
+
+async function listSubmittedClosings(openingNames: string[]) {
+  if (openingNames.length === 0) {
+    return new Map<string, PosClosingEntryRow>()
+  }
+
+  const response = await http.get<FrappeListResponse<PosClosingEntryRow>>(`/resource/${encodeURIComponent(POS_CLOSING_ENTRY)}`, {
+    params: {
+      fields: JSON.stringify(['name', 'pos_opening_entry', 'docstatus', 'status', 'period_end_date', 'posting_date', 'creation', 'modified']),
+      filters: JSON.stringify([
+        [POS_CLOSING_ENTRY, 'docstatus', '=', 1],
+        [POS_CLOSING_ENTRY, 'pos_opening_entry', 'in', openingNames],
+      ]),
+      limit_page_length: openingNames.length,
+      order_by: 'modified desc',
+    },
+  })
+
+  return new Map(
+    response.data.data
+      .filter((closing) => closing.pos_opening_entry)
+      .map((closing) => [closing.pos_opening_entry as string, closing]),
+  )
+}
+
+async function applyClosingEntries(shifts: CashShift[]) {
+  const closingByOpening = await listSubmittedClosings(shifts.map((shift) => shift.name).filter(Boolean))
+
+  return shifts.map((shift) => {
+    const closing = closingByOpening.get(shift.name)
+
+    if (!closing) {
+      return shift
+    }
+
+    return {
+      ...shift,
+      status: 'closed' as const,
+      closingEntry: closing.name,
+      period_end_date: shift.period_end_date ?? closing.period_end_date ?? closing.creation,
+      rawStatus: closing.status ?? shift.rawStatus ?? 'Closed',
+    }
+  })
 }
 
 export async function getCashShiftDefaults(): Promise<CashShiftDefaults> {
@@ -217,27 +272,30 @@ export async function getCashShiftDefaults(): Promise<CashShiftDefaults> {
 
 export async function listCashShifts(params: { limit?: number; offset?: number; status?: 'open' | 'closed' | 'all' } = {}): Promise<CashShiftListResult> {
   const { limit = 20, offset = 0, status = 'all' } = params
-  const filters: unknown[] = []
-
-  if (status === 'open') {
-    filters.push([POS_OPENING_ENTRY, 'docstatus', '=', 1])
-  }
-
-  if (status === 'closed') {
-    filters.push([POS_OPENING_ENTRY, 'status', 'like', '%Closed%'])
-  }
+  const filters: unknown[] = [[POS_OPENING_ENTRY, 'docstatus', '=', 1]]
 
   const response = await http.get<FrappeListResponse<Record<string, unknown>>>(`/resource/${encodeURIComponent(POS_OPENING_ENTRY)}`, {
     params: {
       fields: JSON.stringify(['*']),
-      ...(filters.length > 0 ? { filters: JSON.stringify(filters) } : {}),
+      filters: JSON.stringify(filters),
       limit_start: offset,
       limit_page_length: limit + 1,
       order_by: 'modified desc',
     },
   })
 
-  const rows = response.data.data.map(normalizeShift)
+  const allRows = await applyClosingEntries(response.data.data.map(normalizeShift))
+  const rows = allRows.filter((row) => {
+    if (status === 'open') {
+      return row.status === 'open'
+    }
+
+    if (status === 'closed') {
+      return row.status === 'closed'
+    }
+
+    return true
+  })
 
   return {
     rows: rows.slice(0, limit),
@@ -464,6 +522,12 @@ export async function getCashShiftSummary(shift: CashShift): Promise<CashShiftSu
 }
 
 export async function closeCashShift(values: CloseCashShiftValues) {
+  const existingClosing = (await listSubmittedClosings([values.shift.name])).get(values.shift.name)
+
+  if (existingClosing) {
+    throw new Error(`هذه الوردية مغلقة مسبقًا عبر مستند الإغلاق ${existingClosing.name}.`)
+  }
+
   const now = new Date()
   const countedByMode = new Map(values.countedRows.map((row) => [row.mode_of_payment, numberValue(row.counted_amount)]))
   const reconciliationRows = values.summary.paymentRows.map((row) => {

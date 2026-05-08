@@ -24,6 +24,7 @@ export interface CashShift {
   status: CashShiftStatus
   rawStatus?: string
   docstatus?: 0 | 1 | 2
+  closingEntry?: string
   period_start_date?: string
   period_end_date?: string
   posting_date?: string
