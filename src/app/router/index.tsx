@@ -3,6 +3,7 @@ import { Navigate, createBrowserRouter } from 'react-router-dom'
 import { Loading } from '@/shared/ui/loading'
 import { AdminLayout } from './admin-layout'
 import { ProtectedRoute } from './protected-route'
+import { RouteErrorBoundary } from './route-error-boundary'
 import {
   AccountCreatePage,
   AccountDetailsPage,
@@ -81,10 +82,12 @@ export const router = createBrowserRouter([
   {
     path: '/login',
     element: routePage(<LoginPage />),
+    errorElement: <RouteErrorBoundary />,
   },
   {
     path: '/',
     element: <ProtectedRoute />,
+    errorElement: <RouteErrorBoundary />,
     children: [
       {
         path: 'pos',
@@ -96,6 +99,7 @@ export const router = createBrowserRouter([
       },
       {
         element: <AdminLayout />,
+        errorElement: <RouteErrorBoundary />,
         children: [
           {
             index: true,
