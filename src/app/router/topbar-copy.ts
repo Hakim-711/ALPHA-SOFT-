@@ -1,4 +1,4 @@
-interface TopbarCopy {
+export interface TopbarCopy {
   eyebrow: string
   title: string
 }

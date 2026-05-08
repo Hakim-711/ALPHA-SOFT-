@@ -41,3 +41,6 @@ export const navItems = [
   { label: 'الحسابات والصلاحيات', path: '/accounts', icon: UserCog, enabled: true, section: 'النظام' },
   { label: 'الإعدادات', path: '/settings', icon: Settings, enabled: true, section: 'النظام' },
 ] as const
+
+export type NavItem = (typeof navItems)[number]
+export type NavSection = (typeof navSections)[number]
