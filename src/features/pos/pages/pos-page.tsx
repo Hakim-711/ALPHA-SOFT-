@@ -19,6 +19,7 @@ import {
   Plus,
   PlusCircle,
   ReceiptText,
+  RefreshCw,
   RotateCcw,
   Search,
   ShoppingCart,
@@ -185,6 +186,7 @@ export default function PosPage() {
   const activeShiftQuery = useActiveCashShift(effectiveProfileName, auth.user?.name ?? auth.user?.email, canUsePos && Boolean(effectiveProfileName))
   const activeCashShift = activeShiftQuery.data
   const cashShiftReady = Boolean(activeCashShift)
+  const cashShiftLabel = activeCashShift?.name ? displayErpLabel(activeCashShift.name) : 'لا توجد وردية'
   const hasPosNotices =
     Boolean(posError) ||
     activeShiftQuery.isError ||
@@ -215,6 +217,19 @@ export default function PosPage() {
     (saleMode !== 'partial' || canUsePartialPayment) &&
     stockRequirementMet &&
     cashShiftReady
+  const saleBlockers = [
+    cart.length > 0 ? undefined : 'أضف صنفًا واحدًا على الأقل.',
+    customer ? undefined : 'اختر العميل.',
+    company ? undefined : 'اختر الشركة.',
+    priceList ? undefined : 'اختر قائمة الأسعار.',
+    grandTotal > 0 ? undefined : 'إجمالي الفاتورة يجب أن يكون أكبر من صفر.',
+    paymentRequirementMet ? undefined : 'راجع مبلغ الدفع وطريقة البيع.',
+    receivableRequirementMet ? undefined : 'البيع الآجل أو الجزئي يحتاج حساب ذمم.',
+    creditSaleHasNoPayment ? undefined : 'البيع الآجل لا يقبل دفعة مباشرة.',
+    saleMode !== 'partial' || canUsePartialPayment ? undefined : 'الدفعة الجزئية تحتاج صلاحية سند قبض.',
+    stockRequirementMet ? undefined : 'يوجد صنف كميته أكبر من المتاح في المخزن.',
+    cashShiftReady ? undefined : 'افتح وردية كاشير قبل اعتماد البيع.',
+  ].filter((message): message is string => Boolean(message))
 
   function focusScanner() {
     scanInputRef.current?.focus()
@@ -618,6 +633,22 @@ export default function PosPage() {
   }
 
   useEffect(() => {
+    function refreshShiftWhenVisible() {
+      if (document.visibilityState === 'visible') {
+        void activeShiftQuery.refetch()
+      }
+    }
+
+    window.addEventListener('focus', refreshShiftWhenVisible)
+    document.addEventListener('visibilitychange', refreshShiftWhenVisible)
+
+    return () => {
+      window.removeEventListener('focus', refreshShiftWhenVisible)
+      document.removeEventListener('visibilitychange', refreshShiftWhenVisible)
+    }
+  }, [activeShiftQuery])
+
+  useEffect(() => {
     shortcutActionsRef.current = {
       cancelSaleFromShortcut,
       completeSale,
@@ -741,8 +772,19 @@ export default function PosPage() {
           </span>
           <span className={cashShiftReady ? 'pos-stock-mode-chip active' : 'pos-stock-mode-chip warning'}>
             <DoorOpen size={16} aria-hidden="true" />
-            {cashShiftReady ? `وردية ${activeCashShift?.name}` : 'لا توجد وردية'}
+            {cashShiftReady ? `وردية ${cashShiftLabel}` : 'لا توجد وردية'}
           </span>
+          <button
+            className="button button-secondary"
+            disabled={activeShiftQuery.isFetching}
+            type="button"
+            onClick={() => {
+              void activeShiftQuery.refetch()
+            }}
+          >
+            <RefreshCw size={17} aria-hidden="true" />
+            {activeShiftQuery.isFetching ? 'يفحص الوردية' : 'تحديث الوردية'}
+          </button>
           {offlineQueue.queuedCount > 0 ? (
             <button
               className="button button-secondary"
@@ -936,6 +978,22 @@ export default function PosPage() {
               <DoorOpen size={18} aria-hidden="true" />
               <span>لا توجد وردية كاشير مفتوحة. افتح وردية قبل اعتماد البيع حتى يتم إغلاق الصندوق بشكل صحيح.</span>
               <Link to="/cash-shifts">فتح وردية</Link>
+              <button
+                className="button button-secondary"
+                disabled={activeShiftQuery.isFetching}
+                type="button"
+                onClick={() => {
+                  void activeShiftQuery.refetch()
+                }}
+              >
+                {activeShiftQuery.isFetching ? 'جاري الفحص' : 'فحص الوردية'}
+              </button>
+            </div>
+          ) : null}
+          {!canCompleteSale && saleBlockers.length > 0 ? (
+            <div className="inline-alert inline-alert-warning" role="status">
+              <AlertTriangle size={18} aria-hidden="true" />
+              <span>قبل الاعتماد: {saleBlockers.slice(0, 3).join(' ')}</span>
             </div>
           ) : null}
       {offlineQueue.lastSyncMessage ? (
