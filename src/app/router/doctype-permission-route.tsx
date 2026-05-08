@@ -4,7 +4,7 @@ import { Outlet } from 'react-router-dom'
 import { canUsePermission, useDoctypePermissions } from '@/features/permissions/hooks/use-doctype-permissions'
 import { Loading } from '@/shared/ui/loading'
 
-type PermissionField = 'canRead' | 'canCreate' | 'canWrite' | 'canDelete' | 'canSubmit' | 'canCancel'
+export type PermissionField = 'canRead' | 'canCreate' | 'canWrite' | 'canDelete' | 'canSubmit' | 'canCancel'
 
 interface DoctypePermissionRouteProps {
   children?: ReactNode

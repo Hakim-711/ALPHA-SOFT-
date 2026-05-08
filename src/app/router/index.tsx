@@ -2,7 +2,7 @@ import { Suspense, type ReactNode } from 'react'
 import { Navigate, createBrowserRouter } from 'react-router-dom'
 import { Loading } from '@/shared/ui/loading'
 import { AdminLayout } from './admin-layout'
-import { DoctypePermissionRoute } from './doctype-permission-route'
+import { DoctypePermissionRoute, type PermissionField } from './doctype-permission-route'
 import { ProtectedRoute } from './protected-route'
 import { RouteErrorBoundary } from './route-error-boundary'
 import {
@@ -79,6 +79,14 @@ function routePage(element: ReactNode) {
   )
 }
 
+function guardedRoutePage(doctype: string, element: ReactNode, options: { permission?: PermissionField; permissions?: PermissionField[] } = {}) {
+  return (
+    <DoctypePermissionRoute doctype={doctype} permission={options.permission} permissions={options.permissions}>
+      {routePage(element)}
+    </DoctypePermissionRoute>
+  )
+}
+
 export const router = createBrowserRouter([
   {
     path: '/login',
@@ -92,19 +100,11 @@ export const router = createBrowserRouter([
     children: [
       {
         path: 'pos',
-        element: (
-          <DoctypePermissionRoute doctype="Sales Invoice" permissions={['canCreate', 'canSubmit']}>
-            {routePage(<PosPage />)}
-          </DoctypePermissionRoute>
-        ),
+        element: guardedRoutePage('Sales Invoice', <PosPage />, { permissions: ['canCreate', 'canSubmit'] }),
       },
       {
         path: 'pos/returns',
-        element: (
-          <DoctypePermissionRoute doctype="Sales Invoice" permissions={['canCreate', 'canSubmit']}>
-            {routePage(<PosReturnsPage />)}
-          </DoctypePermissionRoute>
-        ),
+        element: guardedRoutePage('Sales Invoice', <PosReturnsPage />, { permissions: ['canCreate', 'canSubmit'] }),
       },
       {
         element: <AdminLayout />,
@@ -123,9 +123,9 @@ export const router = createBrowserRouter([
             element: <DoctypePermissionRoute doctype="User" />,
             children: [
               { index: true, element: routePage(<AccountsListPage />) },
-              { path: 'new', element: routePage(<AccountCreatePage />) },
+              { path: 'new', element: guardedRoutePage('User', <AccountCreatePage />, { permission: 'canCreate' }) },
               { path: ':accountId', element: routePage(<AccountDetailsPage />) },
-              { path: ':accountId/edit', element: routePage(<AccountEditPage />) },
+              { path: ':accountId/edit', element: guardedRoutePage('User', <AccountEditPage />, { permission: 'canWrite' }) },
             ],
           },
           {
@@ -157,9 +157,9 @@ export const router = createBrowserRouter([
             element: <DoctypePermissionRoute doctype="Customer" />,
             children: [
               { index: true, element: routePage(<CustomersListPage />) },
-              { path: 'new', element: routePage(<CustomerCreatePage />) },
+              { path: 'new', element: guardedRoutePage('Customer', <CustomerCreatePage />, { permission: 'canCreate' }) },
               { path: ':customerId', element: routePage(<CustomerDetailsPage />) },
-              { path: ':customerId/edit', element: routePage(<CustomerEditPage />) },
+              { path: ':customerId/edit', element: guardedRoutePage('Customer', <CustomerEditPage />, { permission: 'canWrite' }) },
             ],
           },
           {
@@ -167,9 +167,9 @@ export const router = createBrowserRouter([
             element: <DoctypePermissionRoute doctype="Supplier" />,
             children: [
               { index: true, element: routePage(<SuppliersListPage />) },
-              { path: 'new', element: routePage(<SupplierCreatePage />) },
+              { path: 'new', element: guardedRoutePage('Supplier', <SupplierCreatePage />, { permission: 'canCreate' }) },
               { path: ':supplierId', element: routePage(<SupplierDetailsPage />) },
-              { path: ':supplierId/edit', element: routePage(<SupplierEditPage />) },
+              { path: ':supplierId/edit', element: guardedRoutePage('Supplier', <SupplierEditPage />, { permission: 'canWrite' }) },
             ],
           },
           {
@@ -177,9 +177,9 @@ export const router = createBrowserRouter([
             element: <DoctypePermissionRoute doctype="Item" />,
             children: [
               { index: true, element: routePage(<ItemsListPage />) },
-              { path: 'new', element: routePage(<ItemCreatePage />) },
+              { path: 'new', element: guardedRoutePage('Item', <ItemCreatePage />, { permission: 'canCreate' }) },
               { path: ':itemId', element: routePage(<ItemDetailsPage />) },
-              { path: ':itemId/edit', element: routePage(<ItemEditPage />) },
+              { path: ':itemId/edit', element: guardedRoutePage('Item', <ItemEditPage />, { permission: 'canWrite' }) },
             ],
           },
           {
@@ -187,9 +187,9 @@ export const router = createBrowserRouter([
             element: <DoctypePermissionRoute doctype="Sales Order" />,
             children: [
               { index: true, element: routePage(<SalesOrdersListPage />) },
-              { path: 'new', element: routePage(<SalesOrderCreatePage />) },
+              { path: 'new', element: guardedRoutePage('Sales Order', <SalesOrderCreatePage />, { permission: 'canCreate' }) },
               { path: ':salesOrderId', element: routePage(<SalesOrderDetailsPage />) },
-              { path: ':salesOrderId/edit', element: routePage(<SalesOrderEditPage />) },
+              { path: ':salesOrderId/edit', element: guardedRoutePage('Sales Order', <SalesOrderEditPage />, { permission: 'canWrite' }) },
             ],
           },
           {
@@ -197,9 +197,9 @@ export const router = createBrowserRouter([
             element: <DoctypePermissionRoute doctype="Payment Entry" />,
             children: [
               { index: true, element: routePage(<CollectionsListPage />) },
-              { path: 'new', element: routePage(<CollectionCreatePage />) },
+              { path: 'new', element: guardedRoutePage('Payment Entry', <CollectionCreatePage />, { permission: 'canCreate' }) },
               { path: ':collectionId', element: routePage(<CollectionDetailsPage />) },
-              { path: ':collectionId/edit', element: routePage(<CollectionEditPage />) },
+              { path: ':collectionId/edit', element: guardedRoutePage('Payment Entry', <CollectionEditPage />, { permission: 'canWrite' }) },
             ],
           },
           {
@@ -207,9 +207,9 @@ export const router = createBrowserRouter([
             element: <DoctypePermissionRoute doctype="Purchase Invoice" />,
             children: [
               { index: true, element: routePage(<PurchaseInvoicesListPage />) },
-              { path: 'new', element: routePage(<PurchaseInvoiceCreatePage />) },
+              { path: 'new', element: guardedRoutePage('Purchase Invoice', <PurchaseInvoiceCreatePage />, { permission: 'canCreate' }) },
               { path: ':purchaseInvoiceId', element: routePage(<PurchaseInvoiceDetailsPage />) },
-              { path: ':purchaseInvoiceId/edit', element: routePage(<PurchaseInvoiceEditPage />) },
+              { path: ':purchaseInvoiceId/edit', element: guardedRoutePage('Purchase Invoice', <PurchaseInvoiceEditPage />, { permission: 'canWrite' }) },
             ],
           },
           {
@@ -217,9 +217,9 @@ export const router = createBrowserRouter([
             element: <DoctypePermissionRoute doctype="Purchase Order" />,
             children: [
               { index: true, element: routePage(<PurchaseOrdersListPage />) },
-              { path: 'new', element: routePage(<PurchaseOrderCreatePage />) },
+              { path: 'new', element: guardedRoutePage('Purchase Order', <PurchaseOrderCreatePage />, { permission: 'canCreate' }) },
               { path: ':purchaseOrderId', element: routePage(<PurchaseOrderDetailsPage />) },
-              { path: ':purchaseOrderId/edit', element: routePage(<PurchaseOrderEditPage />) },
+              { path: ':purchaseOrderId/edit', element: guardedRoutePage('Purchase Order', <PurchaseOrderEditPage />, { permission: 'canWrite' }) },
             ],
           },
           {
@@ -227,9 +227,9 @@ export const router = createBrowserRouter([
             element: <DoctypePermissionRoute doctype="Sales Invoice" />,
             children: [
               { index: true, element: routePage(<SalesInvoicesListPage />) },
-              { path: 'new', element: routePage(<SalesInvoiceCreatePage />) },
+              { path: 'new', element: guardedRoutePage('Sales Invoice', <SalesInvoiceCreatePage />, { permission: 'canCreate' }) },
               { path: ':salesInvoiceId', element: routePage(<SalesInvoiceDetailsPage />) },
-              { path: ':salesInvoiceId/edit', element: routePage(<SalesInvoiceEditPage />) },
+              { path: ':salesInvoiceId/edit', element: guardedRoutePage('Sales Invoice', <SalesInvoiceEditPage />, { permission: 'canWrite' }) },
             ],
           },
           {
@@ -237,9 +237,9 @@ export const router = createBrowserRouter([
             element: <DoctypePermissionRoute doctype="Payment Entry" />,
             children: [
               { index: true, element: routePage(<DisbursementsListPage />) },
-              { path: 'new', element: routePage(<DisbursementCreatePage />) },
+              { path: 'new', element: guardedRoutePage('Payment Entry', <DisbursementCreatePage />, { permission: 'canCreate' }) },
               { path: ':disbursementId', element: routePage(<DisbursementDetailsPage />) },
-              { path: ':disbursementId/edit', element: routePage(<DisbursementEditPage />) },
+              { path: ':disbursementId/edit', element: guardedRoutePage('Payment Entry', <DisbursementEditPage />, { permission: 'canWrite' }) },
             ],
           },
           {
@@ -247,9 +247,9 @@ export const router = createBrowserRouter([
             element: <DoctypePermissionRoute doctype="Stock Entry" />,
             children: [
               { index: true, element: routePage(<StockListPage />) },
-              { path: 'new', element: routePage(<StockCreatePage />) },
+              { path: 'new', element: guardedRoutePage('Stock Entry', <StockCreatePage />, { permission: 'canCreate' }) },
               { path: ':stockEntryId', element: routePage(<StockDetailsPage />) },
-              { path: ':stockEntryId/edit', element: routePage(<StockEditPage />) },
+              { path: ':stockEntryId/edit', element: guardedRoutePage('Stock Entry', <StockEditPage />, { permission: 'canWrite' }) },
             ],
           },
           {
@@ -257,9 +257,9 @@ export const router = createBrowserRouter([
             element: <DoctypePermissionRoute doctype="Stock Reconciliation" />,
             children: [
               { index: true, element: routePage(<StockReconciliationsListPage />) },
-              { path: 'new', element: routePage(<StockReconciliationCreatePage />) },
+              { path: 'new', element: guardedRoutePage('Stock Reconciliation', <StockReconciliationCreatePage />, { permission: 'canCreate' }) },
               { path: ':stockReconciliationId', element: routePage(<StockReconciliationDetailsPage />) },
-              { path: ':stockReconciliationId/edit', element: routePage(<StockReconciliationEditPage />) },
+              { path: ':stockReconciliationId/edit', element: guardedRoutePage('Stock Reconciliation', <StockReconciliationEditPage />, { permission: 'canWrite' }) },
             ],
           },
           {
